@@ -1,0 +1,371 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Photos Hub</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+  <div class="shell">
+    <!-- SIDEBAR -->
+    <aside class="sidebar">
+      <div class="sidebar-top">
+        <div class="app-title">Photos Hub</div>
+      </div>
+
+      <nav class="side-nav">
+        <button class="side-btn active" data-view="albums">Albums</button>
+        <button class="side-btn" data-view="favorites">Favorites</button>
+        <button class="side-btn" data-view="trash">Trash</button>
+        <button class="side-btn" data-view="settings">Settings</button>
+      </nav>
+
+      <div class="sidebar-bottom">
+        <small class="muted">© 2025 Photos Hub</small>
+      </div>
+    </aside>
+
+    <!-- MAIN -->
+    <main class="main">
+      <!-- top bar -->
+      <header class="topbar">
+        <div class="search-area">
+          <input class="search" placeholder='Search for "image" (UI only)' />
+        </div>
+
+        <div class="top-actions">
+          <button id="modeToggle" class="ghost">Use Sample Albums</button>
+        </div>
+      </header>
+
+      <!-- views -->
+      <section id="albums-view" class="view active">
+        <div class="view-header">
+          <h2>Albums</h2>
+          <p class="muted">Tap an album to expand. Tap an image to view.</p>
+        </div>
+
+        <div id="albumsContainer" class="albums-list">
+          <!-- albums injected by JS -->
+        </div>
+      </section>
+
+      <section id="favorites-view" class="view">
+        <div class="view-header">
+          <h2>Favorites</h2>
+          <p class="muted">Your favorite photos (placeholder).</p>
+        </div>
+        <div class="empty">No favorites yet.</div>
+      </section>
+
+      <section id="trash-view" class="view">
+        <div class="view-header">
+          <h2>Trash</h2>
+          <p class="muted">Deleted photos will appear here for 30 days.</p>
+        </div>
+        <div class="empty">Trash is empty.</div>
+      </section>
+
+      <section id="settings-view" class="view">
+        <div class="view-header">
+          <h2>Settings</h2>
+          <p class="muted">Theme: Dark (fixed). App UI settings (placeholders).</p>
+        </div>
+        <div class="settings-grid">
+          <div class="setting">
+            <label>Grid size</label>
+            <select id="gridSelect">
+              <option value="3">Large tiles</option>
+              <option value="4">Medium tiles</option>
+              <option value="6">Small tiles</option>
+            </select>
+          </div>
+          <div class="setting">
+            <label>Slideshow speed</label>
+            <select id="ssSpeed">
+              <option value="3000">3s</option>
+              <option value="5000" selected>5s</option>
+              <option value="8000">8s</option>
+            </select>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- ALBUM PANEL EXPANSION (appears inline below albums) -->
+  <!-- implemented as part of album card in DOM (each album has .album-photos) -->
+
+  <!-- LIGHTBOX -->
+  <div id="lightbox" class="lightbox hidden" aria-hidden="true">
+    <button id="lbClose" class="lb-btn close">✕</button>
+    <button id="lbPrev" class="lb-btn nav prev">‹</button>
+    <div class="lb-inner">
+      <img id="lbImg" src="" alt="expanded photo" />
+      <div id="lbCap" class="lb-cap muted"></div>
+    </div>
+    <button id="lbNext" class="lb-btn nav next">›</button>
+  </div>
+
+<script>
+/* ---------------------------
+  Two datasets:
+   - REAL (from your URLs)
+   - SAMPLE (Unsplash placeholders)
+--------------------------- */
+const REAL_ALBUMS = [
+  {
+    id: 'nature',
+    title: 'Nature Vibes',
+    thumb: 'https://media.istockphoto.com/id/517188688/photo/mountain-landscape.jpg?s=612x612&w=0&k=20&c=A63koPKaCyIwQWOTFBRWXj_PwCrR4cEoOw2S9Q7yVl8=',
+    photos: [
+      'https://media.istockphoto.com/id/517188688/photo/mountain-landscape.jpg?s=612x612&w=0&k=20&c=A63koPKaCyIwQWOTFBRWXj_PwCrR4cEoOw2S9Q7yVl8=',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRtF1Gz_Xsh2r_DfO5JaLspe4oKYcEGo-myBg&s',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQKh3jyQRv2zfF3U2hpnoQ1L-DVHz_s1uO2qA&s',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQvXZTMIM6wUEVgWPDU6Q1Y9kbe4iO4ligBiA&s',
+      'https://www.gokitetours.com/wp-content/uploads/2025/01/10-Best-Tourist-Place-in-Kodaikanal-for-Nature-Lovers.webp'
+    ]
+  },
+  {
+    id: 'tech',
+    title: 'Tech Corner',
+    thumb: 'https://imageio.forbes.com/specials-images/imageserve/66e8ad4b29ea61509edd8b63/0x0.jpg?format=jpg&height=900&width=1600&fit=bounds',
+    photos: [
+      'https://imageio.forbes.com/specials-images/imageserve/66e8ad4b29ea61509edd8b63/0x0.jpg?format=jpg&height=900&width=1600&fit=bounds',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSfOcYP2JM5nfHtZJai-LkaFynJpfx57yn2iA&s',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcRl-g8Wh6XyXqoPb710U7j2vcyH-2RdtKgOeQ&s',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT6obKg-b9ocKh85d_Ab9uxpMbAFwvy6aEY0A&s'
+    ]
+  },
+  {
+    id: 'build',
+    title: 'City Nights',
+    thumb: 'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQRv7za9mkgAVB1c-Tc-SQh3TnoNV90Qnr_Dw&s',
+    photos: [
+      'https://img.freepik.com/free-photo/observation-urban-building-business-steel_1127-2397.jpg',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcStCBHNRzzFaW7bWGQ5IWZiMKgXO3T5kx9xvA&s',
+      'https://assets.architecturaldigest.in/photos/68aee6b6c217baca2192039c/1:1/w_1080,h_1080,c_limit/Untitled%20design%20-%202025-08-27T163622.470.png',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQwTGd9bz-VXUM0j1VEcMJEKmcPTXn8V-d6rg&s'
+    ]
+  },
+  {
+    id: 'dresses',
+    title: 'Style & Dresses',
+    thumb: 'https://cfw51.rabbitloader.xyz/eyJjIjp0cnVlLCJoIjoibXltYW5kYXAuaW4iLCJ2IjozNTA3MDAwMTg5LCJyIjoxLCJpIjoiZjQyMTViYTYtNDFiNi00NjllLWJmYTItMmUxMTE3ZWYwODAwIn0/wp-content/uploads/2022/09/Gray-Suits-scaled.jpg',
+    photos: [
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcSXGQMjQcNmzetHV_-2EGDm4OMRWA3T4c6Czw&s',
+      'https://i.pinimg.com/originals/1b/f0/51/1bf051e70806bc2d2a929a0e7c8fa627.jpg',
+      'https://www.oldmarigold.com/cdn/shop/files/11_2eacba83-ca29-412f-ae71-2d434d1cc838.png?v=1707746852&width=800',
+      'https://cdn.shopify.com/s/files/1/0572/5555/9212/files/1_2.jpg?v=1755671463'
+    ]
+  },
+  {
+    id: 'vehicles',
+    title: 'Vehicles',
+    thumb: 'https://images7.alphacoders.com/108/thumb-1920-1083815.jpg',
+    photos: [
+      'https://images7.alphacoders.com/108/thumb-1920-1083815.jpg',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQiHZqHLae9JsOPPwfuyuwIz7OleFiDJcUnjg&s',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTms8JXoJqbtCRrXInQogYrkLz1vnp_31Cf9g&s',
+      'https://a.espncdn.com/combiner/i?img=%2Fphoto%2F2022%2F0218%2Fr976086_1296x729_16%2D9.jpg'
+    ]
+  },
+  {
+    id: 'food',
+    title: 'Tasty Treats',
+    thumb: 'https://5.imimg.com/data5/UV/OX/MY-9134447/black-currant-ice-cream-4-liter.jpg',
+    photos: [
+      'https://5.imimg.com/data5/UV/OX/MY-9134447/black-currant-ice-cream-4-liter.jpg',
+      'https://i0.wp.com/www.chitrasfoodbook.com/wp-content/uploads/2016/10/gulab-jamun-using-mix.jpg?w=1200&ssl=1',
+      'https://prashantcorner.com/cdn/shop/files/RasmalaiSR-3_b0e4cd60-a20b-45e7-96f8-88776536d7c0.png?v=1720595089&width=1946',
+      'https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcQwvd7tSr_hDtGrgTwfTm-0KATrGuMtJQsP_g&s'
+    ]
+  }
+];
+
+const SAMPLE_ALBUMS = [
+  {
+    id: 'mem',
+    title: 'My Memories',
+    thumb: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
+    photos: [
+      'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d',
+      'https://images.unsplash.com/photo-1524504388940-b1c1722653e1',
+      'https://images.unsplash.com/photo-1515879218367-8466d910aaa4'
+    ]
+  },
+  {
+    id: 'together',
+    title: 'Together Again',
+    thumb: 'https://images.unsplash.com/photo-1512917774080-9991f1c4c750',
+    photos: [
+      'https://images.unsplash.com/photo-1512917774080-9991f1c4c750',
+      'https://images.unsplash.com/photo-1529626455594-4ff0802cfb7e'
+    ]
+  },
+  {
+    id: 'trip',
+    title: 'Trip Pics',
+    thumb: 'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
+    photos: [
+      'https://images.unsplash.com/photo-1500530855697-b586d89ba3ee',
+      'https://images.unsplash.com/photo-1507525428034-b723cf961d3e'
+    ]
+  },
+  {
+    id: 'table',
+    title: 'Around the Table',
+    thumb: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
+    photos: [
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
+      'https://images.unsplash.com/photo-1478145046317-39f10e56b5e9'
+    ]
+  },
+  {
+    id: 'pets',
+    title: 'My Furry Family',
+    thumb: 'https://images.unsplash.com/photo-1517849845537-4d257902454a',
+    photos: [
+      'https://images.unsplash.com/photo-1517849845537-4d257902454a',
+      'https://images.unsplash.com/photo-1517423440428-a5a00ad493e8'
+    ]
+  },
+  {
+    id: 'treats',
+    title: 'Tasty Treats',
+    thumb: 'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
+    photos: [
+      'https://images.unsplash.com/photo-1504674900247-0877df9cc836',
+      'https://images.unsplash.com/photo-1414235077428-338989a2e8c0'
+    ]
+  }
+];
+
+/* ---------------------------
+ DOM refs
+--------------------------- */
+const albumsContainer = document.getElementById('albumsContainer');
+const modeToggle = document.getElementById('modeToggle');
+
+let currentData = REAL_ALBUMS.slice(); // default
+
+/* ---------- helpers ---------- */
+function el(tag, cls = '') { const d = document.createElement(tag); if (cls) d.className = cls; return d; }
+
+/* ---------- render albums ---------- */
+function renderAlbums(data) {
+  albumsContainer.innerHTML = '';
+  data.forEach((album, aIndex) => {
+    const card = el('div','album-card');
+    // header (thumb + info)
+    const header = el('div','album-card-header');
+    const thumbWrap = el('div','thumb-wrap');
+    const img = el('img'); img.src = album.thumb; img.alt = album.title;
+    thumbWrap.appendChild(img);
+    const info = el('div','album-info');
+    const h3 = el('h3'); h3.textContent = album.title;
+    const p = el('p','muted'); p.textContent = `${album.photos.length} photos`;
+    info.appendChild(h3); info.appendChild(p);
+    header.appendChild(thumbWrap); header.appendChild(info);
+    // photos container (hidden until expand)
+    const photosWrap = el('div','album-photos');
+    // build photo elements but keep them empty until expand to save initial load
+    // attach click to header to toggle expand
+    header.addEventListener('click', () => {
+      const expanded = card.classList.toggle('expanded');
+      if (expanded) {
+        // fill photos
+        photosWrap.innerHTML = '';
+        album.photos.forEach((src, idx) => {
+          const ph = el('img','photo-thumb'); ph.src = src; ph.alt = album.title + ' ' + (idx+1);
+          ph.addEventListener('click', (ev) => {
+            ev.stopPropagation(); openLightbox(album.photos, idx, album.title);
+          });
+          photosWrap.appendChild(ph);
+        });
+        // smooth reveal (CSS handles transition); scroll into view
+        setTimeout(()=> card.scrollIntoView({behavior:'smooth', block:'center'}),200);
+      } else {
+        // collapse -> clear to reduce memory
+        photosWrap.innerHTML = '';
+      }
+    });
+
+    card.appendChild(header);
+    card.appendChild(photosWrap);
+    albumsContainer.appendChild(card);
+  });
+}
+
+/* ---------- lightbox ---------- */
+const lightbox = document.getElementById('lightbox');
+const lbImg = document.getElementById('lbImg');
+const lbCap = document.getElementById('lbCap');
+const lbClose = document.getElementById('lbClose');
+const lbPrev = document.getElementById('lbPrev');
+const lbNext = document.getElementById('lbNext');
+
+let lbList = [];
+let lbIndex = 0;
+
+function openLightbox(list, idx, title='') {
+  lbList = list.slice();
+  lbIndex = idx;
+  lbImg.src = lbList[lbIndex];
+  lbCap.textContent = title + ' — ' + (lbIndex+1) + '/' + lbList.length;
+  lightbox.classList.remove('hidden');
+  lightbox.setAttribute('aria-hidden','false');
+}
+function closeLB(){ lightbox.classList.add('hidden'); lightbox.setAttribute('aria-hidden','true'); }
+function prevLB(){ lbIndex = (lbIndex -1 + lbList.length) % lbList.length; lbImg.src = lbList[lbIndex]; lbCap.textContent = lbCap.textContent.replace(/^[^-]+/,(m)=>m) }
+function nextLB(){ lbIndex = (lbIndex +1) % lbList.length; lbImg.src = lbList[lbIndex]; lbCap.textContent = lbCap.textContent.replace(/^[^-]+/,(m)=>m) }
+
+lbClose.addEventListener('click', closeLB);
+lbPrev.addEventListener('click', ()=> { if(lbList.length) { lbIndex=(lbIndex-1+lbList.length)%lbList.length; lbImg.src=lbList[lbIndex]; }});
+lbNext.addEventListener('click', ()=> { if(lbList.length) { lbIndex=(lbIndex+1)%lbList.length; lbImg.src=lbList[lbIndex]; }});
+lightbox.addEventListener('click', (e)=>{ if(e.target===lightbox) closeLB(); });
+
+/* ---------- sidebar navigation ---------- */
+document.querySelectorAll('.side-btn').forEach(btn=>{
+  btn.addEventListener('click', ()=>{
+    document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('active'));
+    btn.classList.add('active');
+    // switch views
+    document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+    const target = btn.getAttribute('data-view');
+    document.getElementById(target + '-view').classList.add('active');
+    // collapse any expanded albums when switching away
+    document.querySelectorAll('.album-card.expanded').forEach(c=> { c.classList.remove('expanded'); c.querySelector('.album-photos').innerHTML=''; });
+  });
+});
+
+/* ---------- mode toggle (REAL / SAMPLE) ---------- */
+modeToggle.addEventListener('click', ()=> {
+  if(modeToggle.textContent.includes('Sample')) {
+    currentData = SAMPLE_ALBUMS.slice();
+    modeToggle.textContent = 'Use Real Albums';
+  } else {
+    currentData = REAL_ALBUMS.slice();
+    modeToggle.textContent = 'Use Sample Albums';
+  }
+  // re-render albums and reset views
+  renderAlbums(currentData);
+  document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('active'));
+  document.querySelector('.side-btn[data-view="albums"]').classList.add('active');
+  document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
+  document.getElementById('albums-view').classList.add('active');
+});
+
+/* ---------- initial render ---------- */
+renderAlbums(currentData);
+
+/* ---------- keyboard support (Esc to close LB) ---------- */
+document.addEventListener('keydown',(e)=> {
+  if(e.key==='Escape') closeLB();
+  if(e.key==='ArrowLeft' && !lightbox.classList.contains('hidden')) { lbPrev.click(); }
+  if(e.key==='ArrowRight' && !lightbox.classList.contains('hidden')) { lbNext.click(); }
+});
+</script>
+</body>
+</html>
