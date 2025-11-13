@@ -8,7 +8,6 @@
 </head>
 <body>
   <div class="shell">
-    <!-- SIDEBAR -->
     <aside class="sidebar">
       <div class="sidebar-top">
         <div class="app-title">Photos Hub</div>
@@ -26,9 +25,7 @@
       </div>
     </aside>
 
-    <!-- MAIN -->
     <main class="main">
-      <!-- top bar -->
       <header class="topbar">
         <div class="search-area">
           <input class="search" placeholder='Search for "image" (UI only)' />
@@ -39,7 +36,6 @@
         </div>
       </header>
 
-      <!-- views -->
       <section id="albums-view" class="view active">
         <div class="view-header">
           <h2>Albums</h2>
@@ -47,7 +43,6 @@
         </div>
 
         <div id="albumsContainer" class="albums-list">
-          <!-- albums injected by JS -->
         </div>
       </section>
 
@@ -94,10 +89,6 @@
     </main>
   </div>
 
-  <!-- ALBUM PANEL EXPANSION (appears inline below albums) -->
-  <!-- implemented as part of album card in DOM (each album has .album-photos) -->
-
-  <!-- LIGHTBOX -->
   <div id="lightbox" class="lightbox hidden" aria-hidden="true">
     <button id="lbClose" class="lb-btn close">✕</button>
     <button id="lbPrev" class="lb-btn nav prev">‹</button>
@@ -109,11 +100,6 @@
   </div>
 
 <script>
-/* ---------------------------
-  Two datasets:
-   - REAL (from your URLs)
-   - SAMPLE (Unsplash placeholders)
---------------------------- */
 const REAL_ALBUMS = [
   {
     id: 'nature',
@@ -242,23 +228,17 @@ const SAMPLE_ALBUMS = [
   }
 ];
 
-/* ---------------------------
- DOM refs
---------------------------- */
 const albumsContainer = document.getElementById('albumsContainer');
 const modeToggle = document.getElementById('modeToggle');
 
-let currentData = REAL_ALBUMS.slice(); // default
+let currentData = REAL_ALBUMS.slice();
 
-/* ---------- helpers ---------- */
 function el(tag, cls = '') { const d = document.createElement(tag); if (cls) d.className = cls; return d; }
 
-/* ---------- render albums ---------- */
 function renderAlbums(data) {
   albumsContainer.innerHTML = '';
   data.forEach((album, aIndex) => {
     const card = el('div','album-card');
-    // header (thumb + info)
     const header = el('div','album-card-header');
     const thumbWrap = el('div','thumb-wrap');
     const img = el('img'); img.src = album.thumb; img.alt = album.title;
@@ -268,14 +248,10 @@ function renderAlbums(data) {
     const p = el('p','muted'); p.textContent = `${album.photos.length} photos`;
     info.appendChild(h3); info.appendChild(p);
     header.appendChild(thumbWrap); header.appendChild(info);
-    // photos container (hidden until expand)
     const photosWrap = el('div','album-photos');
-    // build photo elements but keep them empty until expand to save initial load
-    // attach click to header to toggle expand
     header.addEventListener('click', () => {
       const expanded = card.classList.toggle('expanded');
       if (expanded) {
-        // fill photos
         photosWrap.innerHTML = '';
         album.photos.forEach((src, idx) => {
           const ph = el('img','photo-thumb'); ph.src = src; ph.alt = album.title + ' ' + (idx+1);
@@ -284,10 +260,8 @@ function renderAlbums(data) {
           });
           photosWrap.appendChild(ph);
         });
-        // smooth reveal (CSS handles transition); scroll into view
         setTimeout(()=> card.scrollIntoView({behavior:'smooth', block:'center'}),200);
       } else {
-        // collapse -> clear to reduce memory
         photosWrap.innerHTML = '';
       }
     });
@@ -298,7 +272,6 @@ function renderAlbums(data) {
   });
 }
 
-/* ---------- lightbox ---------- */
 const lightbox = document.getElementById('lightbox');
 const lbImg = document.getElementById('lbImg');
 const lbCap = document.getElementById('lbCap');
@@ -318,29 +291,25 @@ function openLightbox(list, idx, title='') {
   lightbox.setAttribute('aria-hidden','false');
 }
 function closeLB(){ lightbox.classList.add('hidden'); lightbox.setAttribute('aria-hidden','true'); }
-function prevLB(){ lbIndex = (lbIndex -1 + lbList.length) % lbList.length; lbImg.src = lbList[lbIndex]; lbCap.textContent = lbCap.textContent.replace(/^[^-]+/,(m)=>m) }
-function nextLB(){ lbIndex = (lbIndex +1) % lbList.length; lbImg.src = lbList[lbIndex]; lbCap.textContent = lbCap.textContent.replace(/^[^-]+/,(m)=>m) }
+function prevLB(){ lbIndex = (lbIndex -1 + lbList.length) % lbList.length; lbImg.src = lbList[lbIndex]; }
+function nextLB(){ lbIndex = (lbIndex +1) % lbList.length; lbImg.src = lbList[lbIndex]; }
 
 lbClose.addEventListener('click', closeLB);
 lbPrev.addEventListener('click', ()=> { if(lbList.length) { lbIndex=(lbIndex-1+lbList.length)%lbList.length; lbImg.src=lbList[lbIndex]; }});
 lbNext.addEventListener('click', ()=> { if(lbList.length) { lbIndex=(lbIndex+1)%lbList.length; lbImg.src=lbList[lbIndex]; }});
 lightbox.addEventListener('click', (e)=>{ if(e.target===lightbox) closeLB(); });
 
-/* ---------- sidebar navigation ---------- */
 document.querySelectorAll('.side-btn').forEach(btn=>{
   btn.addEventListener('click', ()=>{
     document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('active'));
     btn.classList.add('active');
-    // switch views
     document.querySelectorAll('.view').forEach(v=>v.classList.remove('active'));
     const target = btn.getAttribute('data-view');
     document.getElementById(target + '-view').classList.add('active');
-    // collapse any expanded albums when switching away
     document.querySelectorAll('.album-card.expanded').forEach(c=> { c.classList.remove('expanded'); c.querySelector('.album-photos').innerHTML=''; });
   });
 });
 
-/* ---------- mode toggle (REAL / SAMPLE) ---------- */
 modeToggle.addEventListener('click', ()=> {
   if(modeToggle.textContent.includes('Sample')) {
     currentData = SAMPLE_ALBUMS.slice();
@@ -349,7 +318,6 @@ modeToggle.addEventListener('click', ()=> {
     currentData = REAL_ALBUMS.slice();
     modeToggle.textContent = 'Use Sample Albums';
   }
-  // re-render albums and reset views
   renderAlbums(currentData);
   document.querySelectorAll('.side-btn').forEach(b=>b.classList.remove('active'));
   document.querySelector('.side-btn[data-view="albums"]').classList.add('active');
@@ -357,10 +325,8 @@ modeToggle.addEventListener('click', ()=> {
   document.getElementById('albums-view').classList.add('active');
 });
 
-/* ---------- initial render ---------- */
 renderAlbums(currentData);
 
-/* ---------- keyboard support (Esc to close LB) ---------- */
 document.addEventListener('keydown',(e)=> {
   if(e.key==='Escape') closeLB();
   if(e.key==='ArrowLeft' && !lightbox.classList.contains('hidden')) { lbPrev.click(); }
